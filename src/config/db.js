@@ -141,7 +141,7 @@ async function runStartupMigrations() {
     // Seed default templates
     const defaultTemplates = [
       { key: 'WELCOME_TRIAL', name: 'Welcome Trial', subject: 'Welcome to our Gym!', message: 'Hi {Name}, your trial has started.', vars: '["Name"]' },
-      { key: 'EXPIRY_REMINDER_DAILY', name: 'Expiry Reminder', subject: 'Plan Expiring Soon', message: 'Hi {Name}, your plan {PlanName} expires in {Days} days.', vars: '["Name", "PlanName", "Days"]' },
+      { key: 'EXPIRY_REMINDER_DAILY', name: 'Expiry Reminder', subject: 'Urgent: Your Plan is Expiring Soon! Renew Now', message: 'Hi {Name},\n\n⚠️ Your {PlanName} subscription plan is expiring in {Days} on {ExpiryDate}.\n\nTo ensure uninterrupted access to your Gym Management Dashboard, features, and member services, please buy or renew a plan now.\n\nRenew your plan here: https://gymsoftware.space/admin/subscription\n\nThank you for choosing Kiaan Technology Pvt Ltd!', vars: '["Name", "PlanName", "Days", "ExpiryDate"]' },
       { key: 'TRIAL_EXPIRED_FINAL', name: 'Trial Expired', subject: 'Trial Expired', message: 'Hi {Name}, your trial has expired.', vars: '["Name"]' },
       { key: 'SUBSCRIPTION_ACTIVATED', name: 'Subscription Activated', subject: 'Subscription & Account Activated Successfully!', message: 'Hi {Name},\n\nCongratulations! Your account and subscription for {PlanName} have been successfully activated.\n\nYour Account Login Details:\nEmail / Username: {Email}\nPassword: {Password}\nAmount Paid: ₹{Amount}\n\nThank you for choosing Kiaan Technology Pvt Ltd!', vars: '["Name", "PlanName", "Email", "Password", "Amount"]' },
       { key: 'PLAN_PURCHASED', name: 'Plan Purchased', subject: 'Plan Purchased', message: 'Hi {Name}, you purchased {PlanName}.', vars: '["Name", "PlanName"]' },
@@ -195,7 +195,7 @@ async function runStartupMigrations() {
 
     // Force-update specific templates to latest content
     const templatesToForceUpdate = [
-      'PLAN_UPGRADE_REQUEST', 'PLAN_PURCHASED', 'PLAN_UPGRADED', 'SUBSCRIPTION_ACTIVATED',
+      'PLAN_UPGRADE_REQUEST', 'PLAN_PURCHASED', 'PLAN_UPGRADED', 'SUBSCRIPTION_ACTIVATED', 'EXPIRY_REMINDER_DAILY',
       'NEW_ADMIN_REQUEST', 'ADMIN_REQUEST_APPROVED', 'MEMBER_ADDED', 'MEMBER_ATTENDANCE',
       'DIET_PLAN_ASSIGNED', 'WORKOUT_PLAN_ASSIGNED', 'HEALTH_LOG_ADDED', 'CLASS_BOOKED'
     ];

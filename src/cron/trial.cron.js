@@ -80,8 +80,51 @@ export const initTrialCronJobs = () => {
         }
       }
 
+      // 3. Send 1-2 Days Subscription Expiry Reminders for Admin users (roleId = 2)
+      const [adminsExpiringSoon] = await pool.query(`
+        SELECT id, fullName, email, phone, planName, subscriptionPlan, licenseExpiryDate, DATEDIFF(licenseExpiryDate, NOW()) as daysLeft
+        FROM user
+        WHERE roleId = 2
+          AND licenseExpiryDate IS NOT NULL
+          AND licenseExpiryDate > NOW()
+          AND DATEDIFF(licenseExpiryDate, NOW()) BETWEEN 1 AND 2
+          AND LOWER(status) = 'active'
+      `);
+
+      if (adminsExpiringSoon.length > 0) {
+        for (const admin of adminsExpiringSoon) {
+          const planTitle = admin.planName || admin.subscriptionPlan || "SaaS Plan";
+          const daysLeftStr = admin.daysLeft === 1 ? "1 day" : `${admin.daysLeft} days`;
+          const formattedExpiry = new Date(admin.licenseExpiryDate).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+          });
+
+          console.log(`[SUBSCRIPTION - EXPIRING SOON REMINDER] Email dispatched to Admin: ${admin.email} (${admin.daysLeft} days left)`);
+
+          await sendTemplatedNotification({
+            eventKey: 'EXPIRY_REMINDER_DAILY',
+            tenantId: admin.id,
+            receiverId: admin.id,
+            receiverRole: 'Admin',
+            receiverEmail: admin.email,
+            receiverPhone: admin.phone,
+            variables: {
+              Name: admin.fullName || "Admin",
+              PlanName: planTitle,
+              Days: daysLeftStr,
+              ExpiryDate: formattedExpiry
+            },
+            referenceType: 'SUBSCRIPTION',
+            referenceId: admin.id.toString(),
+            actionUrl: '/admin/subscription'
+          });
+        }
+      }
+
     } catch (error) {
-      console.error("Error running Daily Trial Automation Job:", error);
+      console.error("Error running Daily Trial & Subscription Automation Job:", error);
     }
   });
 
