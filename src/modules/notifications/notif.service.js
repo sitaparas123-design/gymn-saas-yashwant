@@ -1,5 +1,6 @@
 import { pool } from "../../config/db.js"; // make sure it's a mysql2/promise pool
 import { dispatchNotification } from "../../utils/notificationDispatcher.js";
+import { BrevoCredentialResolver } from "../../utils/credentialResolvers.js";
 import { createAppNotification } from "../appNotifications/appNotification.service.js";
 import { sendTemplatedNotification } from "../messageTemplates/messageTemplate.service.js";
 import { emitToUser } from "../../config/socket.js";
@@ -123,8 +124,8 @@ export const sendNotificationService = async ({ type, to, message, memberId, sub
         return { success: false, reason: "Invalid email address: " + to };
       }
 
-      // Guard: if API Key is not configured, skip gracefully
-      const brevoApiKey = process.env.BREVO_API_KEY;
+      const platformCreds = BrevoCredentialResolver.getSuperAdminBrevoCredentials();
+      const brevoApiKey = platformCreds.apiKey;
 
       if (!brevoApiKey) {
         await pool.query(
@@ -135,15 +136,16 @@ export const sendNotificationService = async ({ type, to, message, memberId, sub
         return { success: false, skipped: true, reason: 'Brevo API not configured on server. Set BREVO_API_KEY environment variable.' };
       }
 
-      const mailFrom = process.env.MAIL_FROM || `Gym Management <noreply@gymsoftware.space>`;
-      let senderName = "Gym Management";
-      let senderEmail = "noreply@gymsoftware.space";
+      const mailFrom = process.env.MAIL_FROM || `${platformCreds.senderName} <${platformCreds.senderEmail}>`;
+      let senderName = platformCreds.senderName;
+      let senderEmail = platformCreds.senderEmail;
       const match = mailFrom.match(/(.*)<(.*)>/);
       if (match) {
-          senderName = match[1].trim();
-          senderEmail = match[2].trim();
-      } else {
+          senderName = match[1].trim() || platformCreds.senderName;
+          senderEmail = match[2].trim() || platformCreds.senderEmail;
+      } else if (mailFrom.trim()) {
           senderEmail = mailFrom.trim();
+          senderName = process.env.MAIL_FROM_NAME || platformCreds.senderName;
       }
 
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {

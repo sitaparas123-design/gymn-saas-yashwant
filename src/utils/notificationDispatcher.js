@@ -184,14 +184,15 @@ export const dispatchNotification = async ({
       const clean = (val) => (val || "").toString().replace(/['"]/g, '').trim();
       brevoApiKey = clean(brevoApiKey);
 
-      let senderName = "Gym Management";
-      let senderEmail = "noreply@gymsoftware.space";
+      let senderName = "Kiaan Technology Pvt Ltd";
+      let senderEmail = "lightlabcreation@gmail.com";
       const match = mailFrom.match(/(.*)<(.*)>/);
       if (match) {
-          senderName = match[1].trim();
-          senderEmail = match[2].trim();
-      } else {
+          senderName = match[1].trim() || "Kiaan Technology Pvt Ltd";
+          senderEmail = match[2].trim() || "lightlabcreation@gmail.com";
+      } else if (mailFrom.trim()) {
           senderEmail = mailFrom.trim();
+          senderName = process.env.MAIL_FROM_NAME || "Kiaan Technology Pvt Ltd";
       }
 
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {
