@@ -78,7 +78,7 @@ export const initTrialCronJobs = () => {
               SoftwareName: softwareTitle,
               PlanName: user.planName || user.subscriptionPlan || "SaaS Plan",
               ExpiryDate: formattedExpiry,
-              LoginUrl: 'https://gymsoftware.space/admin/subscription'
+              LoginUrl: 'https://gym-newss.kiaantechnology.com/admin/subscription'
             },
             referenceType: 'SUBSCRIPTION',
             referenceId: user.id.toString(),

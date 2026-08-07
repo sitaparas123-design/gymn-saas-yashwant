@@ -35,7 +35,7 @@ export const createTicket = async (req, res) => {
 
     // 2. Email & Alert to SuperAdmin
     notifySuperAdmin(
-      `🚨 New Support Ticket Alert!\n\nAdmin Name: ${admin.fullName || 'Admin'}\nAdmin Email: ${admin.email}\nSoftware: ${admin.gymName || 'Gym Management'}\nTicket ID: #${ticketNumber}\nSubject: ${subject}\nCategory: ${category || 'General'}\nPriority: ${priority || 'Medium'}\nCreated Date/Time: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n\nIssue Description:\n${message}\n\nDashboard Link: https://gymsoftware.space/superadmin/support`,
+      `🚨 New Support Ticket Alert!\n\nAdmin Name: ${admin.fullName || 'Admin'}\nAdmin Email: ${admin.email}\nSoftware: ${admin.gymName || 'Gym Management'}\nTicket ID: #${ticketNumber}\nSubject: ${subject}\nCategory: ${category || 'General'}\nPriority: ${priority || 'Medium'}\nCreated Date/Time: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n\nIssue Description:\n${message}\n\nDashboard Link: https://gym-newss.kiaantechnology.com/superadmin/support`,
       "NEW_SUPPORT_TICKET",
       { subject: `New Support Ticket #${ticketNumber} - ${admin.gymName || 'Gym Management'}` }
     ).catch(err => console.error("❌ Email to SuperAdmin failed on ticket create:", err.message));
@@ -103,14 +103,14 @@ export const replyToTicket = async (req, res) => {
         toUserId: ticket.adminId,
         softwareName: softwareTitle,
         subject: `Support Ticket #${ticket.ticketNumber} Updated - ${softwareTitle}`,
-        message: `Hello ${ticket.adminName || 'Admin'},\n\nYour support ticket has been updated by our support team.\n\nTicket:\n#${ticket.ticketNumber}\n\nIssue:\n${ticket.subject}\n\nResponse:\n${message}\n\nStatus:\n${newStatus}\n\nYou can view the complete ticket from your dashboard:\nhttps://gymsoftware.space/admin/support\n\nThank you,\nKiaan Technology Pvt Ltd`,
+        message: `Hello ${ticket.adminName || 'Admin'},\n\nYour support ticket has been updated by our support team.\n\nTicket:\n#${ticket.ticketNumber}\n\nIssue:\n${ticket.subject}\n\nResponse:\n${message}\n\nStatus:\n${newStatus}\n\nYou can view the complete ticket from your dashboard:\nhttps://gym-newss.kiaantechnology.com/admin/support\n\nThank you,\nKiaan Technology Pvt Ltd`,
         isSystemEvent: true,
         customChannels: ['EMAIL', 'IN_APP']
       }).catch(err => console.error("❌ Email to Admin failed on ticket reply:", err.message));
     } else {
       // Admin replied -> Send Email to SuperAdmin
       notifySuperAdmin(
-        `📩 Admin Reply on Support Ticket #${ticket.ticketNumber}\n\nAdmin Name: ${ticket.adminName || 'Admin'}\nAdmin Email: ${ticket.adminEmail}\nSoftware: ${softwareTitle}\nSubject: ${ticket.subject}\nStatus: ${newStatus}\n\nAdmin Response:\n${message}\n\nDashboard Link: https://gymsoftware.space/superadmin/support`,
+        `📩 Admin Reply on Support Ticket #${ticket.ticketNumber}\n\nAdmin Name: ${ticket.adminName || 'Admin'}\nAdmin Email: ${ticket.adminEmail}\nSoftware: ${softwareTitle}\nSubject: ${ticket.subject}\nStatus: ${newStatus}\n\nAdmin Response:\n${message}\n\nDashboard Link: https://gym-newss.kiaantechnology.com/superadmin/support`,
         "TICKET_REPLY",
         { subject: `Support Ticket #${ticket.ticketNumber} Updated - ${softwareTitle}` }
       ).catch(err => console.error("❌ Email to SuperAdmin failed on ticket reply:", err.message));
@@ -143,7 +143,7 @@ export const updateTicketStatus = async (req, res) => {
       toUserId: ticket.adminId,
       softwareName: softwareTitle,
       subject: `Support Ticket #${ticket.ticketNumber} Updated - ${softwareTitle}`,
-      message: `Hello ${ticket.adminName || 'Admin'},\n\nYour support ticket status has been updated.\n\nTicket:\n#${ticket.ticketNumber}\n\nIssue:\n${ticket.subject}\n\nStatus:\n${statusText}\n\nYou can view the complete ticket from your dashboard:\nhttps://gymsoftware.space/admin/support\n\nThank you,\nKiaan Technology Pvt Ltd`,
+      message: `Hello ${ticket.adminName || 'Admin'},\n\nYour support ticket status has been updated.\n\nTicket:\n#${ticket.ticketNumber}\n\nIssue:\n${ticket.subject}\n\nStatus:\n${statusText}\n\nYou can view the complete ticket from your dashboard:\nhttps://gym-newss.kiaantechnology.com/admin/support\n\nThank you,\nKiaan Technology Pvt Ltd`,
       isSystemEvent: true,
       customChannels: ['EMAIL', 'IN_APP']
     }).catch(err => console.error("❌ Email to Admin failed on ticket status update:", err.message));

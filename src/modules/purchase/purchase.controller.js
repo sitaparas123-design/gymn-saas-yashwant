@@ -462,7 +462,7 @@ export const updatePurchaseStatus = async (req, res, next) => {
               Duration: actualPlanDuration || "Monthly",
               StartDate: startDateStr,
               ExpiryDate: expiryDateStr,
-              LoginUrl: 'https://gymsoftware.space/login'
+              LoginUrl: 'https://gym-newss.kiaantechnology.com/login'
             },
             referenceType: 'SUBSCRIPTION',
             referenceId: id.toString(),
@@ -474,11 +474,11 @@ export const updatePurchaseStatus = async (req, res, next) => {
         const startDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
         const expiryDateStr = new Date(Date.now() + planDurationDays * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
-        // Email notification to SuperAdmin with user details & plan purchase info
+        // Email notification to SuperAdmin with new admin & plan purchase details
         notifySuperAdmin(
-          `🚨 New Plan Purchase Alert!\n\nAdmin Name: ${data.adminName || data.companyName || 'Gym Owner'}\nAdmin Email: ${data.email}\nPhone: ${data.phone || 'N/A'}\nGym / Company: ${data.companyName || 'N/A'}\nSoftware: ${softwareTitle}\nSelected Plan: ${data.selectedPlan || 'N/A'}\nAmount Paid: ₹${data.amount || 0}\nPayment Status: Active / Successful\nPayment Method: ${data.paymentMethod || 'Razorpay'}\nStart Date: ${startDateStr}\nExpiry Date: ${expiryDateStr}\nPurchase Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+          `🚨 New Admin & Plan Purchase Alert!\n\nA new Admin has purchased a plan.\n\nNew Admin Details:\nAdmin Name: ${data.adminName || data.companyName || 'Gym Owner'}\nAdmin Email: ${data.email}\nPhone: ${data.phone || 'N/A'}\nGym / Company: ${data.companyName || 'N/A'}\nSoftware / Product Name: ${softwareTitle}\n\nPurchased Plan Details:\nSelected Plan: ${data.selectedPlan || 'N/A'}\nAmount Paid: ₹${data.amount || 0}\nBilling Duration: ${actualPlanDuration}\nPayment Status: Active / Successful\nPayment Method: ${data.paymentMethod || 'Razorpay'}\nStart Date: ${startDateStr}\nExpiry Date: ${expiryDateStr}\nPurchase Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}\n\nSuperAdmin Dashboard:\nhttps://gym-newss.kiaantechnology.com/superadmin/purchases`,
           "NEW_PLAN_PURCHASE",
-          { subject: `New Plan Purchase - ${data.adminName || data.companyName || data.email} - ${softwareTitle}` }
+          { subject: `🚨 New Admin Alert: ${data.adminName || data.companyName || data.email} bought ${data.selectedPlan} (${softwareTitle})` }
         ).catch(err => console.error("Failed to notify SuperAdmin of plan purchase:", err.message));
 
       } catch (activationErr) {

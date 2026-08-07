@@ -233,7 +233,11 @@ export const dispatchNotification = async ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Brevo API Error: ${JSON.stringify(errorData)}`);
+        const errMsg = errorData.message || JSON.stringify(errorData);
+        if (errMsg.includes("unrecognised IP address") || errorData.code === "unauthorized") {
+          console.error(`🚨 BREVO SECURITY ALERT: IP Restriction active in Brevo account. Go to https://app.brevo.com/security/authorised_ips and click 'Deactivate for API keys' to allow all server IPs.`);
+        }
+        throw new Error(`Brevo API Error: ${errMsg}`);
       }
 
       const responseData = await response.json();
