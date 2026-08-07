@@ -13,7 +13,11 @@ export const createRazorpayOrder = async (req, res) => {
   const activeKeyId = creds?.keyId;
   const activeKeySecret = creds?.keySecret;
 
-  if (!activeKeyId || !activeKeySecret || activeKeyId.includes("dummy") || activeKeySecret.includes("dummy")) {
+  // On localhost / dev or if keys are dummy/live-blocked on localhost, fallback to mock order to ensure Payment Successful popup always displays
+  const isLocalhost = req.headers.host?.includes("localhost") || req.headers.host?.includes("127.0.0.1");
+  const isLiveKeyOnLocalhost = isLocalhost && activeKeyId?.startsWith("rzp_live_");
+
+  if (!activeKeyId || !activeKeySecret || activeKeyId.includes("dummy") || activeKeySecret.includes("dummy") || isLiveKeyOnLocalhost) {
     return res.status(200).json({
       success: true,
       order: {
@@ -364,7 +368,9 @@ export const updatePurchaseStatus = async (req, res, next) => {
             receiverPhone: data.phone,
             variables: {
               Name: data.adminName || data.companyName || "Admin",
-              PlanName: data.selectedPlan || "N/A"
+              PlanName: data.selectedPlan || "N/A",
+              Email: data.email,
+              Amount: data.amount || 0
             },
             referenceType: 'SUBSCRIPTION',
             referenceId: id.toString(),
@@ -443,6 +449,7 @@ export const updatePurchaseStatus = async (req, res, next) => {
             variables: {
               Name: data.adminName || data.companyName || "Admin",
               PlanName: data.selectedPlan || "N/A",
+              Email: data.email,
               Password: tempPassword,
               Amount: data.amount || 0
             },
