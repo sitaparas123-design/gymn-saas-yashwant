@@ -3,6 +3,7 @@ import { pool } from "../../config/db.js";
 import { uploadToCloudinary } from "../../config/cloudinary.js";
 import bcrypt from "bcryptjs";
 import { sendTemplatedNotification } from "../messageTemplates/messageTemplate.service.js";
+import { notifySuperAdmin } from "../notifications/notif.service.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import { PaymentCredentialResolver } from "../../utils/credentialResolvers.js";
@@ -438,7 +439,7 @@ export const updatePurchaseStatus = async (req, res, next) => {
 
           const newUserId = result.insertId;
           const newAdminId = newUserId;
-          // APP NOTIFICATION
+          // Welcome email & notification to purchasing user
           await sendTemplatedNotification({
             eventKey: 'SUBSCRIPTION_ACTIVATED',
             tenantId: newAdminId,
@@ -449,6 +450,7 @@ export const updatePurchaseStatus = async (req, res, next) => {
             variables: {
               Name: data.adminName || data.companyName || "Admin",
               PlanName: data.selectedPlan || "N/A",
+              Duration: actualPlanDuration || "Monthly",
               Email: data.email,
               Password: tempPassword,
               Amount: data.amount || 0
@@ -458,6 +460,14 @@ export const updatePurchaseStatus = async (req, res, next) => {
             actionUrl: '/'
           });
         }
+
+        // Email notification to SuperAdmin with user details & plan purchase info
+        notifySuperAdmin(
+          `🚨 New Plan Purchase Alert!\n\nUser Name: ${data.adminName || data.companyName || 'Gym Owner'}\nUser Email: ${data.email}\nPhone: ${data.phone || 'N/A'}\nGym / Company: ${data.companyName || 'N/A'}\nSelected Plan: ${data.selectedPlan || 'N/A'}\nBilling Duration: ${actualPlanDuration}\nAmount Paid: ₹${data.amount || 0}\nPurchase Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+          "NEW_PLAN_PURCHASE",
+          { subject: `New Plan Purchase: ${data.selectedPlan} by ${data.companyName || data.email}` }
+        ).catch(err => console.error("Failed to notify SuperAdmin of plan purchase:", err.message));
+
       } catch (activationErr) {
         console.error("Failed auto-activating user on purchase approval:", activationErr);
       }

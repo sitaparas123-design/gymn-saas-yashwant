@@ -696,8 +696,9 @@ export const deleteAnnouncementService = async (id, adminId) => {
 // ─────────────────────────────────────────────────────────
 // Real-time Notification for Super Admin
 // ─────────────────────────────────────────────────────────
-export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT") => {
+export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT", options = {}) => {
   try {
+    const { subject = "SuperAdmin Alert — Gym Management" } = options;
     // Find superadmin (roleId = 1) and sub-admins (roleId = 9)
     const [superAdmins] = await pool.query(`SELECT id, email, phone FROM user WHERE roleId IN (1, 9) AND LOWER(status) = 'active'`);
     
@@ -712,7 +713,7 @@ export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT") => {
         toEmail: sa.email,
         toPhone: sa.phone || null,
         toUserId: superAdminId,
-        subject: "SuperAdmin Alert — GymSoft",
+        subject: subject,
         message: message,
         isSystemEvent: true, // Use platform credentials
         customChannels: ["IN_APP", "EMAIL"] // Force both channels
