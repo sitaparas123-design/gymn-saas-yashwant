@@ -2,9 +2,9 @@ import { pool } from "../config/db.js";
 import { BrevoCredentialResolver, WhatsAppCredentialResolver } from "./credentialResolvers.js";
 
 /**
- * Build styled HTML email
+ * Build styled HTML email with dynamic software name
  */
-const buildEmailHtml = (subject, message) => {
+const buildEmailHtml = (subject, message, softwareName = "Gym Management") => {
   // Replace literal '\n' string with actual newlines to support DB stored templates
   const normalizedMessage = message.replace(/\\n/g, '\n');
   const lines = normalizedMessage.split("\n").map(l => {
@@ -25,8 +25,8 @@ const buildEmailHtml = (subject, message) => {
       <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr>
           <td style="background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:28px 32px;">
-            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">💪 Gym Management</h1>
-            <p style="margin:4px 0 0;color:#e0e7ff;font-size:13px;">Your Fitness Partner</p>
+            <h1 style="margin:0;color:#fff;font-size:22px;font-weight:700;">💪 ${softwareName}</h1>
+            <p style="margin:4px 0 0;color:#e0e7ff;font-size:13px;">Official Notification</p>
           </td>
         </tr>
         <tr>
@@ -37,7 +37,7 @@ const buildEmailHtml = (subject, message) => {
         </tr>
         <tr>
           <td style="background:#f9fafb;padding:20px 32px;border-top:1px solid #e5e7eb;">
-            <p style="margin:0;color:#9ca3af;font-size:12px;">This is an automated message from Gym Management. Please do not reply.</p>
+            <p style="margin:0;color:#9ca3af;font-size:12px;">This is an automated message from ${softwareName}. Please do not reply.</p>
           </td>
         </tr>
       </table>
@@ -125,9 +125,10 @@ export const dispatchNotification = async ({
   memberId,
   subject = "Gym Management — Gym Notification",
   message,
-  customChannels,
+  customChannels = null,
   adminIdForCredits = null,
-  isSystemEvent = false
+  isSystemEvent = false,
+  softwareName = null
 }) => {
   if (!message) {
     console.warn("⚠️ Notification Dispatcher: Message is empty. Skipping.");
@@ -146,11 +147,21 @@ export const dispatchNotification = async ({
     if (memRows.length > 0) adminId = memRows[0].adminId;
   }
   if (!adminId && toUserId) {
-    const [uRows] = await pool.query("SELECT adminId, roleId, id FROM user WHERE id = ?", [toUserId]);
+    const [uRows] = await pool.query("SELECT adminId, roleId, id, gymName FROM user WHERE id = ?", [toUserId]);
     if (uRows.length > 0) {
       adminId = uRows[0].roleId === 2 ? uRows[0].id : uRows[0].adminId;
     }
   }
+
+  // ── Resolve dynamic software / product name ──
+  let dynamicSoftwareName = softwareName;
+  if (!dynamicSoftwareName && adminId) {
+    const [gymRows] = await pool.query("SELECT gymName FROM user WHERE id = ?", [adminId]);
+    if (gymRows.length > 0 && gymRows[0].gymName) {
+      dynamicSoftwareName = gymRows[0].gymName;
+    }
+  }
+  if (!dynamicSoftwareName) dynamicSoftwareName = "Gym Management";
 
   // ── Load admin's custom credentials using new resolvers ──
   let tenantBrevoCreds = null;
@@ -215,7 +226,7 @@ export const dispatchNotification = async ({
           sender: { name: senderName, email: senderEmail },
           to: [{ email: toEmail }],
           subject: subject,
-          htmlContent: buildEmailHtml(subject, message),
+          htmlContent: buildEmailHtml(subject, message, dynamicSoftwareName),
           textContent: message
         })
       });

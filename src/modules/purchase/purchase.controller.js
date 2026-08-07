@@ -439,6 +439,11 @@ export const updatePurchaseStatus = async (req, res, next) => {
 
           const newUserId = result.insertId;
           const newAdminId = newUserId;
+
+          const startDateStr = (startDate && !isNaN(new Date(startDate).getTime()) ? new Date(startDate) : new Date()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          const expiryDateStr = (expiryDate && !isNaN(new Date(expiryDate).getTime()) ? new Date(expiryDate) : new Date(Date.now() + planDurationDays * 86400000)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+          const softwareTitle = data.companyName || "Gym Management";
+
           // Welcome email & notification to purchasing user
           await sendTemplatedNotification({
             eventKey: 'SUBSCRIPTION_ACTIVATED',
@@ -449,11 +454,15 @@ export const updatePurchaseStatus = async (req, res, next) => {
             receiverPhone: data.phone,
             variables: {
               Name: data.adminName || data.companyName || "Admin",
-              PlanName: data.selectedPlan || "N/A",
-              Duration: actualPlanDuration || "Monthly",
+              SoftwareName: softwareTitle,
               Email: data.email,
               Password: tempPassword,
-              Amount: data.amount || 0
+              PlanName: data.selectedPlan || "N/A",
+              Amount: data.amount || 0,
+              Duration: actualPlanDuration || "Monthly",
+              StartDate: startDateStr,
+              ExpiryDate: expiryDateStr,
+              LoginUrl: 'https://gymsoftware.space/login'
             },
             referenceType: 'SUBSCRIPTION',
             referenceId: id.toString(),
@@ -461,11 +470,15 @@ export const updatePurchaseStatus = async (req, res, next) => {
           });
         }
 
+        const softwareTitle = data.companyName || "Gym Management";
+        const startDateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+        const expiryDateStr = new Date(Date.now() + planDurationDays * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
         // Email notification to SuperAdmin with user details & plan purchase info
         notifySuperAdmin(
-          `🚨 New Plan Purchase Alert!\n\nUser Name: ${data.adminName || data.companyName || 'Gym Owner'}\nUser Email: ${data.email}\nPhone: ${data.phone || 'N/A'}\nGym / Company: ${data.companyName || 'N/A'}\nSelected Plan: ${data.selectedPlan || 'N/A'}\nBilling Duration: ${actualPlanDuration}\nAmount Paid: ₹${data.amount || 0}\nPurchase Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
+          `🚨 New Plan Purchase Alert!\n\nAdmin Name: ${data.adminName || data.companyName || 'Gym Owner'}\nAdmin Email: ${data.email}\nPhone: ${data.phone || 'N/A'}\nGym / Company: ${data.companyName || 'N/A'}\nSoftware: ${softwareTitle}\nSelected Plan: ${data.selectedPlan || 'N/A'}\nAmount Paid: ₹${data.amount || 0}\nPayment Status: Active / Successful\nPayment Method: ${data.paymentMethod || 'Razorpay'}\nStart Date: ${startDateStr}\nExpiry Date: ${expiryDateStr}\nPurchase Date: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}`,
           "NEW_PLAN_PURCHASE",
-          { subject: `New Plan Purchase: ${data.selectedPlan} by ${data.companyName || data.email}` }
+          { subject: `New Plan Purchase - ${data.adminName || data.companyName || data.email} - ${softwareTitle}` }
         ).catch(err => console.error("Failed to notify SuperAdmin of plan purchase:", err.message));
 
       } catch (activationErr) {

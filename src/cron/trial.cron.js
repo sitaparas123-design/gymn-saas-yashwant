@@ -50,7 +50,7 @@ export const initTrialCronJobs = () => {
 
       // 2. Automatic Account Deactivation (Grace period ended without conversion)
       const [expiredGracePeriodUsers] = await pool.query(`
-        SELECT id, fullName, email 
+        SELECT id, fullName, email, phone, gymName, planName, subscriptionPlan, licenseExpiryDate 
         FROM user 
         WHERE roleId = 2 
           AND trialStatus = 'Expired'
@@ -62,6 +62,9 @@ export const initTrialCronJobs = () => {
         for (const user of expiredGracePeriodUsers) {
           await pool.query("UPDATE user SET status = 'Inactive' WHERE id = ?", [user.id]);
 
+          const formattedExpiry = user.licenseExpiryDate ? new Date(user.licenseExpiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : "Recently";
+          const softwareTitle = user.gymName || "Gym Management";
+
           console.log(`[AUTOMATION - DEACTIVATED] Dispatched to: ${user.email}`);
           await sendTemplatedNotification({
             eventKey: 'TRIAL_EXPIRED_FINAL',
@@ -71,7 +74,11 @@ export const initTrialCronJobs = () => {
             receiverEmail: user.email,
             receiverPhone: user.phone,
             variables: {
-              Name: user.fullName || "User"
+              Name: user.fullName || "Admin",
+              SoftwareName: softwareTitle,
+              PlanName: user.planName || user.subscriptionPlan || "SaaS Plan",
+              ExpiryDate: formattedExpiry,
+              LoginUrl: 'https://gymsoftware.space/admin/subscription'
             },
             referenceType: 'SUBSCRIPTION',
             referenceId: user.id.toString(),
@@ -82,7 +89,7 @@ export const initTrialCronJobs = () => {
 
       // 3. Send 1-2 Days Subscription Expiry Reminders for Admin users (roleId = 2)
       const [adminsExpiringSoon] = await pool.query(`
-        SELECT id, fullName, email, phone, planName, subscriptionPlan, licenseExpiryDate, DATEDIFF(licenseExpiryDate, NOW()) as daysLeft
+        SELECT id, fullName, email, phone, gymName, planName, subscriptionPlan, licenseExpiryDate, DATEDIFF(licenseExpiryDate, NOW()) as daysLeft
         FROM user
         WHERE roleId = 2
           AND licenseExpiryDate IS NOT NULL
@@ -100,6 +107,7 @@ export const initTrialCronJobs = () => {
             month: 'short',
             year: 'numeric'
           });
+          const softwareTitle = admin.gymName || "Gym Management";
 
           console.log(`[SUBSCRIPTION - EXPIRING SOON REMINDER] Email dispatched to Admin: ${admin.email} (${admin.daysLeft} days left)`);
 
@@ -112,6 +120,7 @@ export const initTrialCronJobs = () => {
             receiverPhone: admin.phone,
             variables: {
               Name: admin.fullName || "Admin",
+              SoftwareName: softwareTitle,
               PlanName: planTitle,
               Days: daysLeftStr,
               ExpiryDate: formattedExpiry
