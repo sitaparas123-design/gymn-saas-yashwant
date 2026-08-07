@@ -161,11 +161,20 @@ export const dispatchNotification = async ({
     tenantBrevoCreds = await BrevoCredentialResolver.getTenantBrevoCredentials(adminId);
   }
 
+  const isValidEmail = (email) => {
+    if (!email || typeof email !== 'string') return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
+  };
+
   // ════════════════════════════════════════════
   // 1.  EMAIL  →  Brevo HTTP API
   // ════════════════════════════════════════════
   if (activeChannels.includes("EMAIL") && toEmail) {
-    try {
+    if (!isValidEmail(toEmail)) {
+      console.warn(`⚠️ EMAIL skipped for invalid recipient address: "${toEmail}"`);
+      results.email = { success: false, reason: `Invalid recipient email format: ${toEmail}` };
+    } else {
+      try {
       let brevoApiKey = null;
       let mailFrom = null;
 
@@ -241,6 +250,7 @@ export const dispatchNotification = async ({
       ).catch(() => {});
     }
   }
+}
 
   // ════════════════════════════════════════════
   // 2.  WHATSAPP  (Removed as per request)

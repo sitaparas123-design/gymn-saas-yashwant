@@ -35,6 +35,10 @@ export const memberCheckIn = async (req, res, next) => {
     let isAdmin = false;
     let userBranchId = branchId;
     let memberAdminId = null;
+    let staffAdminId = null;
+    let userRecords = [];
+    let memberRecords = [];
+    let checkedInPersonName = "User";
 
     // ✅ QR code adminId is required
     if (!qrAdminId) {
@@ -44,15 +48,17 @@ export const memberCheckIn = async (req, res, next) => {
       });
     }
 
-    // First, check if member exists (by member.id or user.id)
-    const [memberRecords] = await pool.query(
-      "SELECT * FROM member WHERE id = ? OR userId = ?",
-      [memberId, memberId]
+    // First, check if member exists (by userId or member.id)
+    const [mRows] = await pool.query(
+      "SELECT * FROM member WHERE userId = ? OR id = ? ORDER BY (userId = ?) DESC, id ASC",
+      [memberId, memberId, memberId]
     );
+    memberRecords = mRows;
 
     if (memberRecords.length > 0) {
       isMember = true;
       memberAdminId = memberRecords[0].adminId;
+      checkedInPersonName = memberRecords[0].fullName || "Member";
       // Always use member's branchId from database (most reliable)
       userBranchId = memberRecords[0].branchId || branchId;
       
@@ -75,15 +81,17 @@ export const memberCheckIn = async (req, res, next) => {
       }
     } else {
       // Not a member, check if staff/user exists
-      const [userRecords] = await pool.query(
+      const [uRows] = await pool.query(
         `SELECT u.*, r.name as roleName FROM user u 
          LEFT JOIN role r ON u.roleId = r.id 
          WHERE u.id = ?`,
         [memberId]
       );
+      userRecords = uRows;
 
       if (userRecords.length > 0) {
         const user = userRecords[0];
+        checkedInPersonName = user.fullName || "Staff Member";
         const roleName = user.roleName?.toUpperCase() || '';
         
         // ❌ Block admin check-in - Admin cannot check-in themselves
@@ -96,7 +104,7 @@ export const memberCheckIn = async (req, res, next) => {
         
         // For staff (receptionist, trainer, etc.), check their adminId
         // Staff members have adminId in user table
-        let staffAdminId = user.adminId;
+        staffAdminId = user.adminId;
         
         // If adminId not in user table, check staff table
         if (!staffAdminId) {
@@ -276,7 +284,7 @@ export const memberCheckIn = async (req, res, next) => {
     }
 
     // Emit socket event to admin
-    const adminToNotify = isMember ? memberAdminId : (typeof staffAdminId !== 'undefined' ? staffAdminId : null);
+    const adminToNotify = isMember ? memberAdminId : staffAdminId;
     if (adminToNotify) {
       emitToUser(`admin_${adminToNotify}`, "checkin_update", {
         type: isMember ? "member" : "staff",
@@ -286,9 +294,8 @@ export const memberCheckIn = async (req, res, next) => {
       });
 
       // Send app notification to admin and their staff
-      const attName = isMember ? memberRecords[0].fullName : (typeof userRecords !== 'undefined' ? userRecords[0].fullName : "User");
       const checkInTime = finalCheckIn.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true });
-      await notifyAdminAndStaff(adminToNotify, `${attName} has checked in at ${checkInTime}.`, {
+      await notifyAdminAndStaff(adminToNotify, `${checkedInPersonName} has checked in at ${checkInTime}.`, {
         title: "New Check-In",
         reference_type: "ATTENDANCE"
       });
