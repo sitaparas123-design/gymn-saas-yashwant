@@ -477,6 +477,18 @@ export const updatePurchaseStatus = async (req, res, next) => {
           } catch (notifErr) {
             console.error("Notice: Welcome notification notice:", notifErr?.message);
           }
+
+          // In-App Welcome Notification on Dashboard
+          try {
+            const welcomeTitle = `🎉 Welcome to ${softwareTitle}!`;
+            const welcomeMsg = `Hi ${data.adminName || data.companyName || 'Admin'}, welcome aboard! Your account and ${data.selectedPlan || 'N/A'} plan subscription (₹${data.amount || 0} / ${actualPlanDuration || 'Monthly'}) have been successfully activated. Let's get started!`;
+            await pool.query(
+              "INSERT INTO app_notification (tenantId, senderId, receiverId, receiverRole, type, title, message, referenceType, referenceId, isRead, createdAt) VALUES (?, NULL, ?, 'Admin', 'WELCOME', ?, ?, 'SUBSCRIPTION', '1', FALSE, NOW())",
+              [newAdminId, newAdminId, welcomeTitle, welcomeMsg]
+            );
+          } catch (appNotifErr) {
+            console.error("Notice: In-app welcome notification notice:", appNotifErr?.message);
+          }
         }
 
         const softwareTitle = data.companyName || "Gym Management";
