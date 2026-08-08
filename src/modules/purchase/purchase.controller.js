@@ -368,9 +368,12 @@ export const updatePurchaseStatus = async (req, res, next) => {
               receiverPhone: data.phone,
               variables: {
                 Name: data.adminName || data.companyName || "Admin",
+                SoftwareName: data.companyName || "Gym Management",
                 PlanName: data.selectedPlan || "N/A",
                 Email: data.email,
-                Amount: data.amount || 0
+                Password: data.password || data.visiblePassword || existingUser.visiblePassword || "Your registered password",
+                Amount: data.amount || 0,
+                LoginUrl: 'https://gym-newss.kiaantechnology.com/login'
               },
               referenceType: 'SUBSCRIPTION',
               referenceId: (id || "").toString(),
