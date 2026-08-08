@@ -56,7 +56,7 @@ export const createRazorpayOrder = async (req, res) => {
         currency: "INR",
         status: "created"
       },
-      key: activeKeyId,
+      key: activeKeyId || "rzp_test_mock_key",
       isMock: true
     });
   }
@@ -80,26 +80,23 @@ export const verifyRazorpayPayment = async (req, res) => {
     }
 
     const creds = PaymentCredentialResolver.getSuperAdminRazorpayCredentials();
-    const activeKeySecret = creds.keySecret;
+    const activeKeySecret = creds?.keySecret;
 
     if (!isMock && activeKeySecret && !activeKeySecret.includes("dummy") && !razorpay_order_id?.startsWith("order_mock_")) {
       const generated_signature = crypto
         .createHmac("sha256", activeKeySecret)
-        .update(razorpay_order_id + "|" + razorpay_payment_id)
+        .update((razorpay_order_id || "") + "|" + (razorpay_payment_id || ""))
         .digest("hex");
 
       if (generated_signature !== razorpay_signature) {
-        return res.status(400).json({ success: false, message: "Invalid payment signature" });
+        console.warn("❌ Razorpay signature verification mismatch!");
+        return res.status(400).json({ success: false, message: "Payment verification failed: Invalid payment signature." });
       }
     }
 
     // Since payment is verified, we process the purchase request automatically
     purchaseData.paymentMethod = "Razorpay";
-    // Important: if using FormData, file is in req.files
-    // In createPurchaseService, it expects data to contain all fields. But wait, createPurchaseService doesn't handle file uploads!
-    // createPurchase (the controller) handles file uploads.
-    // If we call createPurchaseService directly, the file upload won't happen.
-    // Let's mimic createPurchase's file upload logic here:
+    
     let imageUrl = null;
     if (req.files?.profileImage) {
       const { uploadToCloudinary } = await import("../../config/cloudinary.js");
@@ -115,17 +112,18 @@ export const verifyRazorpayPayment = async (req, res) => {
     const purchase = await createPurchaseService(purchaseData);
 
     // 2. Immediately approve it since payment is verified
-    // We mimic the updatePurchaseStatus logic but internally
-    const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
     let successData = purchase;
-    const resMock = {
-      json: (data) => { successData = data; },
-      status: (code) => resMock
-    };
+    try {
+      const reqMock = { params: { id: purchase.id }, body: { status: "APPROVED" } };
+      const resMock = {
+        json: (data) => { if (data) successData = data; },
+        status: (code) => resMock
+      };
 
-    // We can just call updatePurchaseStatus with mock req/res, OR we just use the existing function
-    // Let's call updatePurchaseStatus directly. It takes (req, res, next).
-    await updatePurchaseStatus(reqMock, resMock, (err) => { throw err; });
+      await updatePurchaseStatus(reqMock, resMock, (err) => { console.error("Auto-approve callback error:", err); });
+    } catch (approveErr) {
+      console.warn("Notice: Purchase recorded, but auto-approve encounter notice:", approveErr?.message);
+    }
 
     return res.status(200).json({
       success: true,
@@ -134,7 +132,7 @@ export const verifyRazorpayPayment = async (req, res) => {
     });
   } catch (err) {
     console.error("Razorpay Verify Error:", err);
-    return res.status(500).json({ success: false, message: err.message });
+    return res.status(500).json({ success: false, message: err.message || "Failed to process payment verification" });
   }
 };
 export const createPurchase = async (req, res) => {
@@ -360,27 +358,31 @@ export const updatePurchaseStatus = async (req, res, next) => {
           );
 
           // APP NOTIFICATION
-          await sendTemplatedNotification({
-            eventKey: 'PLAN_UPGRADED',
-            tenantId: existingUser.adminId || existingUser.id,
-            receiverId: existingUser.id,
-            receiverRole: 'Admin',
-            receiverEmail: data.email,
-            receiverPhone: data.phone,
-            variables: {
-              Name: data.adminName || data.companyName || "Admin",
-              PlanName: data.selectedPlan || "N/A",
-              Email: data.email,
-              Amount: data.amount || 0
-            },
-            referenceType: 'SUBSCRIPTION',
-            referenceId: id.toString(),
-            actionUrl: '/admin/subscription'
-          });
+          try {
+            await sendTemplatedNotification({
+              eventKey: 'PLAN_UPGRADED',
+              tenantId: existingUser.adminId || existingUser.id,
+              receiverId: existingUser.id,
+              receiverRole: 'Admin',
+              receiverEmail: data.email,
+              receiverPhone: data.phone,
+              variables: {
+                Name: data.adminName || data.companyName || "Admin",
+                PlanName: data.selectedPlan || "N/A",
+                Email: data.email,
+                Amount: data.amount || 0
+              },
+              referenceType: 'SUBSCRIPTION',
+              referenceId: (id || "").toString(),
+              actionUrl: '/admin/subscription'
+            });
+          } catch (notifErr) {
+            console.error("Notice: Upgrade notification notice:", notifErr?.message);
+          }
 
         } else {
           // USER DOES NOT EXIST: Create New Admin Account
-          const tempPassword = data.password || data.visiblePassword || req.body.password || `Gym@${Math.floor(1000 + Math.random() * 9000)}`;
+          const tempPassword = data.password || data.visiblePassword || req.body?.password || `Gym@${Math.floor(1000 + Math.random() * 9000)}`;
           const hash = await bcrypt.hash(tempPassword, 10);
 
           const startDate = new Date(); // Start Date is strictly Approval Date
@@ -445,29 +447,33 @@ export const updatePurchaseStatus = async (req, res, next) => {
           const softwareTitle = data.companyName || "Gym Management";
 
           // Welcome email & notification to purchasing user
-          await sendTemplatedNotification({
-            eventKey: 'SUBSCRIPTION_ACTIVATED',
-            tenantId: newAdminId,
-            receiverId: newAdminId,
-            receiverRole: 'Admin',
-            receiverEmail: data.email,
-            receiverPhone: data.phone,
-            variables: {
-              Name: data.adminName || data.companyName || "Admin",
-              SoftwareName: softwareTitle,
-              Email: data.email,
-              Password: tempPassword,
-              PlanName: data.selectedPlan || "N/A",
-              Amount: data.amount || 0,
-              Duration: actualPlanDuration || "Monthly",
-              StartDate: startDateStr,
-              ExpiryDate: expiryDateStr,
-              LoginUrl: 'https://gym-newss.kiaantechnology.com/login'
-            },
-            referenceType: 'SUBSCRIPTION',
-            referenceId: id.toString(),
-            actionUrl: '/'
-          });
+          try {
+            await sendTemplatedNotification({
+              eventKey: 'SUBSCRIPTION_ACTIVATED',
+              tenantId: newAdminId,
+              receiverId: newAdminId,
+              receiverRole: 'Admin',
+              receiverEmail: data.email,
+              receiverPhone: data.phone,
+              variables: {
+                Name: data.adminName || data.companyName || "Admin",
+                SoftwareName: softwareTitle,
+                Email: data.email,
+                Password: tempPassword,
+                PlanName: data.selectedPlan || "N/A",
+                Amount: data.amount || 0,
+                Duration: actualPlanDuration || "Monthly",
+                StartDate: startDateStr,
+                ExpiryDate: expiryDateStr,
+                LoginUrl: 'https://gym-newss.kiaantechnology.com/login'
+              },
+              referenceType: 'SUBSCRIPTION',
+              referenceId: (id || "").toString(),
+              actionUrl: '/'
+            });
+          } catch (notifErr) {
+            console.error("Notice: Welcome notification notice:", notifErr?.message);
+          }
         }
 
         const softwareTitle = data.companyName || "Gym Management";
