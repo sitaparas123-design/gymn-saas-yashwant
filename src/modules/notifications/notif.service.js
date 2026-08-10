@@ -693,33 +693,33 @@ export const deleteAnnouncementService = async (id, adminId) => {
   return true;
 };
 
-// ─────────────────────────────────────────────────────────
-// Real-time Notification for Super Admin
-// ─────────────────────────────────────────────────────────
-export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT", options = {}) => {
-  try {
-    const { subject = "SuperAdmin Alert — Gym Management" } = options;
-    // Find superadmin (roleId = 1) and sub-admins (roleId = 9)
-    const [superAdmins] = await pool.query(`SELECT id, email, phone FROM user WHERE roleId IN (1, 9) AND LOWER(status) = 'active'`);
-    
-    if (superAdmins.length === 0) return; // No superadmin found
-
-    for (const sa of superAdmins) {
-      const superAdminId = sa.id;
+  // ─────────────────────────────────────────────────────────
+  // Real-time Notification for Super Admin
+  // ─────────────────────────────────────────────────────────
+  export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT", options = {}) => {
+    try {
+      const { subject = "SuperAdmin Alert — Gym Management" } = options;
+      // Find superadmin (roleId = 1) and sub-admins (roleId = 9)
+      const [superAdmins] = await pool.query(`SELECT id, email, phone FROM user WHERE roleId IN (1, 9) AND LOWER(status) = 'active'`);
       
-      // Dispatch both IN-APP and EMAIL notification to SuperAdmin
-      dispatchNotification({
-        category: "saas_renewal_channel",
-        toEmail: sa.email,
-        toPhone: sa.phone || null,
-        toUserId: superAdminId,
-        subject: subject,
-        message: message,
-        isSystemEvent: true, // Use platform credentials
-        customChannels: ["IN_APP", "EMAIL"] // Force both channels
-      }).catch(err => console.error("❌ Failed to notify SuperAdmin via dispatchNotification:", err.message));
+      if (superAdmins.length === 0) return; // No superadmin found
+
+      for (const sa of superAdmins) {
+        const superAdminId = sa.id;
+        
+        // Dispatch both IN-APP and EMAIL notification to SuperAdmin
+        dispatchNotification({
+          category: "saas_renewal_channel",
+          toEmail: sa.email,
+          toPhone: sa.phone || null,
+          toUserId: superAdminId,
+          subject: subject,
+          message: message,
+          isSystemEvent: true, // Use platform credentials
+          customChannels: ["IN_APP", "EMAIL"] // Force both channels
+        }).catch(err => console.error("❌ Failed to notify SuperAdmin via dispatchNotification:", err.message));
+      }
+    } catch (err) {
+      console.error("❌ Failed to notify SuperAdmin:", err.message);
     }
-  } catch (err) {
-    console.error("❌ Failed to notify SuperAdmin:", err.message);
-  }
-};
+  };

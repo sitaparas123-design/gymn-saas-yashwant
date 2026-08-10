@@ -205,11 +205,11 @@ export const dispatchNotification = async ({
       brevoApiKey = clean(brevoApiKey);
 
       let senderName = "Kiaan Technology Pvt Ltd";
-      let senderEmail = "lightlabcreation@gmail.com";
+      let senderEmail = "info@kiaantechnology.com";
       const match = mailFrom.match(/(.*)<(.*)>/);
       if (match) {
           senderName = match[1].trim() || "Kiaan Technology Pvt Ltd";
-          senderEmail = match[2].trim() || "lightlabcreation@gmail.com";
+          senderEmail = match[2].trim() || "info@kiaantechnology.com";
       } else if (mailFrom.trim()) {
           senderEmail = mailFrom.trim();
           senderName = process.env.MAIL_FROM_NAME || "Kiaan Technology Pvt Ltd";

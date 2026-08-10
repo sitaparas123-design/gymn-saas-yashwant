@@ -1,3 +1,4 @@
+
 import { pool } from "./src/config/db.js";
 
 async function run() {
@@ -7,3 +8,12 @@ async function run() {
 }
 
 run();
+
+
+
+
+
+
+
+
+
