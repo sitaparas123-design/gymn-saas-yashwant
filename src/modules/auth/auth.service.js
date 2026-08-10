@@ -1482,15 +1482,15 @@ export const getAccountByEmail = async (email) => {
 
 export const forgotPasswordService = async (email, ip, userAgent) => {
   try {
-    // 1. Rate Limiting: Max 5 requests per hour
+    // 1. Rate Limiting: Max 20 requests per hour
     const [recentRequests] = await pool.query(
       "SELECT COUNT(*) as count FROM password_reset_otp WHERE email = ? AND createdAt >= NOW() - INTERVAL 1 HOUR",
       [email]
     );
     
-    if (recentRequests[0].count >= 5) {
+    if (recentRequests[0].count >= 20) {
       await logAuthAudit(email, 'OTP_FAILED', ip, userAgent, { reason: 'Rate limit exceeded' });
-      return { success: true, message: "If an account with this email exists, an OTP has been sent." }; // Enumeration protection
+      return { success: false, message: "Too many OTP requests. Please try again after 1 hour." };
     }
 
     const account = await getAccountByEmail(email);
@@ -1502,7 +1502,7 @@ export const forgotPasswordService = async (email, ip, userAgent) => {
     // 2. Generate OTP
     const rawOtp = crypto.randomInt(100000, 999999).toString();
     const hashedOtp = await bcrypt.hash(rawOtp, 10);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 minutes
 
     // 3. Save to DB
     await pool.query(
@@ -1591,12 +1591,12 @@ export const verifyOtpService = async (email, rawOtp) => {
 
 export const resendOtpService = async (email, ip, userAgent) => {
   const [recent] = await pool.query(
-    "SELECT id FROM password_reset_otp WHERE email = ? AND createdAt >= NOW() - INTERVAL 60 SECOND",
+    "SELECT id FROM password_reset_otp WHERE email = ? AND createdAt >= NOW() - INTERVAL 15 SECOND",
     [email]
   );
 
   if (recent.length > 0) {
-    return { success: false, message: "Please wait 60 seconds before requesting a new OTP." };
+    return { success: false, message: "Please wait 15 seconds before requesting a new OTP." };
   }
 
   await pool.query("UPDATE password_reset_otp SET isUsed = TRUE WHERE email = ? AND isUsed = FALSE", [email]);

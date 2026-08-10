@@ -163,7 +163,7 @@ async function runStartupMigrations() {
       { key: 'SESSION_CREATED', name: 'Session Created', subject: 'New Session Booked', message: 'Hi {Name}, a new session {SessionName} has been booked.', vars: '["Name", "SessionName"]' },
       { key: 'SESSION_UPDATED', name: 'Session Updated', subject: 'Session Updated', message: 'Hi {Name}, the session {SessionName} has been updated.', vars: '["Name", "SessionName"]' },
       { key: 'SESSION_CANCELLED', name: 'Session Cancelled', subject: 'Session Cancelled', message: 'Hi {Name}, the session {SessionName} has been cancelled.', vars: '["Name", "SessionName"]' },
-      { key: 'FORGOT_PASSWORD_OTP', name: 'Forgot Password OTP', subject: 'Password Reset OTP', message: 'Hi {Name},\\n\\nYour OTP is\\n{OTP}\\n\\nIt will expire in\\n10 Minutes.\\n\\nIf you did not request this,\\nplease ignore this email.', vars: '["Name", "OTP", "CompanyName"]' },
+      { key: 'FORGOT_PASSWORD_OTP', name: 'Forgot Password OTP', subject: 'Password Reset OTP', message: 'Hi {Name},\\n\\nYour OTP is\\n{OTP}\\n\\nIt will expire in\\n3 Minutes.\\n\\nIf you did not request this,\\nplease ignore this email.', vars: '["Name", "OTP", "CompanyName"]' },
       { key: 'PASSWORD_CHANGED', name: 'Password Changed', subject: 'Password Changed Successfully', message: 'Your account password has been changed successfully.\\n\\nIf this was not you, please contact your administrator immediately.', vars: '[]' },
       { key: 'NEW_ADMIN_REQUEST', name: 'New Admin Request', subject: 'New SaaS Plan Request', message: 'Hi Superadmin, {AdminName} has requested or purchased the {PlanName} plan.', vars: '["AdminName", "PlanName"]' },
       { key: 'ADMIN_REQUEST_APPROVED', name: 'Admin Request Approved', subject: 'SaaS Plan Approved', message: 'Hi {Name}, your request for the {PlanName} plan has been approved and activated.', vars: '["Name", "PlanName"]' },
@@ -321,6 +321,13 @@ async function runStartupMigrations() {
         INDEX idx_token (token(255))
       );
     `);
+
+    try {
+      await pool.query("ALTER TABLE booking_requests ADD COLUMN paymentMode VARCHAR(50) NULL");
+    } catch (_) {}
+    try {
+      await pool.query("ALTER TABLE booking_requests ADD COLUMN paymentProofImage VARCHAR(500) NULL");
+    } catch (_) {}
 
     console.log("✅ Tables notification_queue, notification_delivery_log, app_notification_archive, password_reset_otp, auth_audit_log, token_blacklist created or verified.");
   } catch (e) {

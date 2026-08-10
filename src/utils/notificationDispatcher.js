@@ -224,6 +224,7 @@ export const dispatchNotification = async ({
         },
         body: JSON.stringify({
           sender: { name: senderName, email: senderEmail },
+          replyTo: { name: senderName, email: isTenantContext && tenantBrevoCreds ? senderEmail : "info@kiaantechnology.com" },
           to: [{ email: toEmail }],
           subject: subject,
           htmlContent: buildEmailHtml(subject, message, dynamicSoftwareName),

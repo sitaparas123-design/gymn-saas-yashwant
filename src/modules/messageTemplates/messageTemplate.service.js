@@ -143,6 +143,7 @@ export const sendTemplatedNotification = async ({
         subject,
         message,
         customChannels: dispatchChannels,
+        adminIdForCredits: tenantId,
         isSystemEvent
       }).catch(err => console.error(`❌ Dispatch failed for ${eventKey}:`, err.message));
     }
