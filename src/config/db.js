@@ -370,4 +370,16 @@ async function runStartupMigrations() {
   } catch (e) {
     console.error("❌ Failed to create support tables:", e.message);
   }
+
+  // ── Auto-update 1 RS plan to 599 RS ──
+  try {
+    await pool.query(`
+      UPDATE plan 
+      SET price = 599, name = IF(name = 'Starter 1' OR name = 'Starter 1 RS' OR name = 'Starter 1 ', 'Starter 599', name)
+      WHERE price = 1 OR price = 1.00 OR name = 'Starter 1'
+    `);
+    console.log("✅ Plan price updated from ₹1 to ₹599.");
+  } catch (planErr) {
+    console.error("Notice: Plan price update notice:", planErr?.message);
+  }
 }

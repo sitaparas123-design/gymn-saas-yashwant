@@ -323,12 +323,14 @@ export const updatePurchaseStatus = async (req, res, next) => {
             planDurationDays = 365;
           } else if (actualPlanDuration.toLowerCase().includes("quarter")) {
             planDurationDays = 90;
-          } else if (actualPlanDuration.toLowerCase().includes("1 day") || actualPlanDuration.toLowerCase().includes("day")) {
+          } else if (actualPlanDuration.toLowerCase().includes("7 day") || actualPlanDuration.toLowerCase().includes("7 days")) {
+            planDurationDays = 7;
+          } else if (actualPlanDuration.toLowerCase().includes("1 day")) {
             planDurationDays = 1;
           }
         } else if (data.selectedPlan && (data.selectedPlan.toLowerCase().includes("trial") || data.selectedPlan.toLowerCase().includes("free") || data.selectedPlan.toLowerCase().includes("try"))) {
-          planDurationDays = 1;
-          actualPlanDuration = "1 Day";
+          planDurationDays = 7;
+          actualPlanDuration = "7 Days";
         }
 
         // 1. Check if user already exists
