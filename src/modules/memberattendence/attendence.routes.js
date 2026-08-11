@@ -22,6 +22,7 @@ router.post("/checkin", memberCheckIn);
 
 // ✅ Member Check-out
 router.put("/checkout/:id", memberCheckOut);
+router.post("/checkout/:id", memberCheckOut);
 
 // ✅ Daily Attendance Report (with search, filter)
 router.get("/daily", getDailyAttendance);
