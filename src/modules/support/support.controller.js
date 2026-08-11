@@ -79,7 +79,8 @@ export const getAllTickets = async (req, res) => {
     if (priority) { query += ' AND priority = ?'; params.push(priority); }
     query += ' ORDER BY updatedAt DESC';
     const [tickets] = await pool.query(query, params);
-    return res.json({ success: true, tickets });
+    const formattedTickets = tickets.map(t => ({ ...t, imageUrl: t.imageUrl || t.attachmentUrl }));
+    return res.json({ success: true, tickets: formattedTickets });
   } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
 };
 
@@ -89,7 +90,14 @@ export const getTicketById = async (req, res) => {
     const [tickets] = await pool.query('SELECT * FROM support_ticket WHERE id = ?', [id]);
     if (!tickets.length) return res.status(404).json({ success: false, message: 'Ticket not found.' });
     const [replies] = await pool.query('SELECT * FROM support_ticket_reply WHERE ticketId = ? ORDER BY createdAt ASC', [id]);
-    return res.json({ success: true, ticket: tickets[0], replies });
+    
+    const formattedTicket = { ...tickets[0], imageUrl: tickets[0].imageUrl || tickets[0].attachmentUrl };
+    const formattedReplies = replies.map(r => ({
+      ...r,
+      imageUrl: r.imageUrl || r.attachmentUrl
+    }));
+
+    return res.json({ success: true, ticket: formattedTicket, replies: formattedReplies });
   } catch (err) { return res.status(500).json({ success: false, message: err.message }); }
 };
 
