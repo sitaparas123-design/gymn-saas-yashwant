@@ -698,7 +698,7 @@ export const deleteAnnouncementService = async (id, adminId) => {
   // ─────────────────────────────────────────────────────────
   export const notifySuperAdmin = async (message, type = "SYSTEM_ALERT", options = {}) => {
     try {
-      const { subject = "SuperAdmin Alert — Gym Management" } = options;
+      const { subject = "SuperAdmin Alert — Gym Management", targetEmail = null } = options;
       // Find superadmin (roleId = 1) and sub-admins (roleId = 9)
       const [superAdmins] = await pool.query(`SELECT id, email, phone FROM user WHERE roleId IN (1, 9) AND LOWER(status) = 'active'`);
       
@@ -710,7 +710,7 @@ export const deleteAnnouncementService = async (id, adminId) => {
         // Dispatch both IN-APP and EMAIL notification to SuperAdmin
         dispatchNotification({
           category: "saas_renewal_channel",
-          toEmail: sa.email,
+          toEmail: targetEmail || sa.email,
           toPhone: sa.phone || null,
           toUserId: superAdminId,
           subject: subject,
