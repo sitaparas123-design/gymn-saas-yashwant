@@ -378,7 +378,12 @@ async function runStartupMigrations() {
       SET price = 599, name = IF(name = 'Starter 1' OR name = 'Starter 1 RS' OR name = 'Starter 1 ', 'Starter 599', name)
       WHERE price = 1 OR price = 1.00 OR name = 'Starter 1'
     `);
-    console.log("✅ Plan price updated from ₹1 to ₹599.");
+    await pool.query(`
+      UPDATE plan 
+      SET name = '7-Day Free Trial', duration = '7 Days', description = '7 Days full feature trial access'
+      WHERE price = 0 OR category = 'Trial' OR name LIKE '%1 Day%' OR name LIKE '%1-Day%'
+    `);
+    console.log("✅ Free Trial plan updated to 7 Days.");
   } catch (planErr) {
     console.error("Notice: Plan price update notice:", planErr?.message);
   }

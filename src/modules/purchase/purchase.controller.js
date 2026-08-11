@@ -407,7 +407,7 @@ export const updatePurchaseStatus = async (req, res, next) => {
           let subPlan = "Basic";
           if (data.selectedPlan) {
             const lowPlan = data.selectedPlan.toLowerCase();
-            if (lowPlan.includes("trial") || lowPlan.includes("free") || (data.amount == 0)) subPlan = "1-Day Trial";
+            if (lowPlan.includes("trial") || lowPlan.includes("free") || (data.amount == 0)) subPlan = "7-Day Trial";
             else if (lowPlan.includes("premium") || lowPlan.includes("pro")) subPlan = "Premium";
             else if (lowPlan.includes("growth")) subPlan = "Growth";
           }
