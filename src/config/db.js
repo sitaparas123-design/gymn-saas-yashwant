@@ -371,21 +371,21 @@ async function runStartupMigrations() {
     console.error("❌ Failed to create support tables:", e.message);
   }
 
-  // ── Auto-update plan prices ──
+  // ── Auto-update plan prices and clean names ──
   try {
     await pool.query(`
       UPDATE plan 
-      SET price = 999
+      SET price = 999, name = 'Starter'
       WHERE price = 599 OR price = 1 OR price = 1.00 OR name LIKE '%starter%'
     `);
     await pool.query(`
       UPDATE plan 
-      SET price = 1299
+      SET price = 1299, name = 'Standard'
       WHERE price = 799 OR name LIKE '%standard%'
     `);
     await pool.query(`
       UPDATE plan 
-      SET price = 1499
+      SET price = 1499, name = 'Pro'
       WHERE price = 1299 OR name LIKE '%pro%'
     `);
     await pool.query(`

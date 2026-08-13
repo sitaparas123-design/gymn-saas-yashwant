@@ -51,6 +51,7 @@ import creditsRoutes from "../modules/credits/credits.routes.js";
 import messageTemplateRoutes from "../modules/messageTemplates/messageTemplate.routes.js";
 import integrationsRoutes from "../modules/integrations/integrations.routes.js";
 import supportRoutes from "../modules/support/support.routes.js";
+import aiRoutes from "../modules/ai/ai.routes.js";
 
 const router = Router();
 
@@ -113,5 +114,7 @@ router.use("/app-notifications", appNotificationRoutes);
 router.use("/v1/message-templates", messageTemplateRoutes);
 router.use("/integrations", integrationsRoutes);
 router.use("/support", supportRoutes);
+router.use("/v1/ai", aiRoutes);
+router.use("/ai", aiRoutes);
 
 export default router;
