@@ -371,21 +371,21 @@ async function runStartupMigrations() {
     console.error("❌ Failed to create support tables:", e.message);
   }
 
-  // ── Auto-update plan prices ──
+  // ── Auto-update plan prices and clean names ──
   try {
     await pool.query(`
       UPDATE plan 
-      SET price = 999
+      SET price = 999, name = 'Starter'
       WHERE price = 599 OR price = 1 OR price = 1.00 OR name LIKE '%starter%'
     `);
     await pool.query(`
       UPDATE plan 
-      SET price = 1299
-      WHERE price = 799 OR name LIKE '%standard%'
+      SET price = 1299, name = 'Growth'
+      WHERE price = 799 OR name LIKE '%standard%' OR name LIKE '%growth%'
     `);
     await pool.query(`
       UPDATE plan 
-      SET price = 1499
+      SET price = 1499, name = 'Pro'
       WHERE price = 1299 OR name LIKE '%pro%'
     `);
     await pool.query(`
@@ -393,7 +393,7 @@ async function runStartupMigrations() {
       SET name = '7-Day Free Trial', duration = '7 Days', description = '7 Days full feature trial access'
       WHERE price = 0 OR category = 'Trial' OR name LIKE '%1 Day%' OR name LIKE '%1-Day%'
     `);
-    console.log("✅ Plan prices updated to 999, 1299, 1499.");
+    console.log("✅ Plan prices and names updated to Starter (999), Growth (1299), Pro (1499).");
   } catch (planErr) {
     console.error("Notice: Plan price update notice:", planErr?.message);
   }
