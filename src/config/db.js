@@ -328,6 +328,9 @@ async function runStartupMigrations() {
     try {
       await pool.query("ALTER TABLE booking_requests ADD COLUMN paymentProofImage VARCHAR(500) NULL");
     } catch (_) {}
+    try {
+      await pool.query("ALTER TABLE dietplan ADD COLUMN adminId INT NULL");
+    } catch (_) {}
 
     console.log("✅ Tables notification_queue, notification_delivery_log, app_notification_archive, password_reset_otp, auth_audit_log, token_blacklist created or verified.");
   } catch (e) {
