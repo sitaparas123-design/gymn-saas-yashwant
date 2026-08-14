@@ -376,29 +376,23 @@ async function runStartupMigrations() {
 
   // ── Auto-update plan prices and clean names ──
   try {
-    await pool.query(`
-      UPDATE plan 
-      SET price = 999, name = 'Starter'
-      WHERE category = 'BASIC' OR name LIKE '%starter%'
-    `);
-    await pool.query(`
-      UPDATE plan 
-      SET price = 1299, name = 'Growth'
-      WHERE category = 'GROWTH' OR name LIKE '%growth%' OR name LIKE '%standard%'
-    `);
-    await pool.query(`
-      UPDATE plan 
-      SET price = 1499, name = 'Pro'
-      WHERE category = 'PRO' OR (name LIKE '%pro%' AND name NOT LIKE '%growth%')
-    `);
-    await pool.query(`
-      UPDATE plan 
-      SET name = '7-Day Free Trial', duration = '7 Days', description = '7 Days full feature trial access'
-      WHERE price = 0 OR category = 'Trial' OR name LIKE '%1 Day%' OR name LIKE '%1-Day%'
-    `);
+    const [allPlans] = await pool.query(`SELECT id, name, price, category FROM plan ORDER BY id ASC`);
+    if (allPlans && allPlans.length > 0) {
+      const nonTrial = allPlans.filter(p => p.price > 0 || (p.name && !p.name.toLowerCase().includes('trial')));
+      if (nonTrial.length >= 3) {
+        await pool.query(`UPDATE plan SET name = 'Starter', price = 999, category = 'BASIC' WHERE id = ?`, [nonTrial[0].id]);
+        await pool.query(`UPDATE plan SET name = 'Growth', price = 1299, category = 'GROWTH' WHERE id = ?`, [nonTrial[1].id]);
+        await pool.query(`UPDATE plan SET name = 'Pro', price = 1499, category = 'PRO' WHERE id = ?`, [nonTrial[2].id]);
+      }
+      const trial = allPlans.filter(p => p.price === 0 || (p.name && p.name.toLowerCase().includes('trial')));
+      if (trial.length > 0) {
+        await pool.query(`UPDATE plan SET name = '7-Day Free Trial', duration = '7 Days', description = '7 Days full feature trial access', category = 'TRIAL' WHERE id = ?`, [trial[0].id]);
+      }
+    }
     console.log("✅ Plan prices and names updated to Starter (999), Growth (1299), Pro (1499).");
   } catch (planErr) {
     console.error("Notice: Plan price update notice:", planErr?.message);
   }
 }
+
 
