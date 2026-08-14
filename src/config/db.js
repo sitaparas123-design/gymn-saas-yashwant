@@ -379,17 +379,17 @@ async function runStartupMigrations() {
     await pool.query(`
       UPDATE plan 
       SET price = 999, name = 'Starter'
-      WHERE price = 599 OR price = 1 OR price = 1.00 OR name LIKE '%starter%'
+      WHERE category = 'BASIC' OR name LIKE '%starter%'
     `);
     await pool.query(`
       UPDATE plan 
       SET price = 1299, name = 'Growth'
-      WHERE price = 799 OR name LIKE '%standard%' OR name LIKE '%growth%'
+      WHERE category = 'GROWTH' OR name LIKE '%growth%' OR name LIKE '%standard%'
     `);
     await pool.query(`
       UPDATE plan 
       SET price = 1499, name = 'Pro'
-      WHERE price = 1299 OR name LIKE '%pro%'
+      WHERE category = 'PRO' OR (name LIKE '%pro%' AND name NOT LIKE '%growth%')
     `);
     await pool.query(`
       UPDATE plan 
@@ -401,3 +401,4 @@ async function runStartupMigrations() {
     console.error("Notice: Plan price update notice:", planErr?.message);
   }
 }
+
