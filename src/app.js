@@ -1,77 +1,79 @@
-// const express = require('express');
-// const env = require('./config/env');
-// const routes = require('./routes');
-// const errorHandler = require('./middlewares/errorHandler');
+const express = require('express');
+const cors = require('cors');
 
-// const app = express();
+// Import routes
+const authRoutes = require('./modules/auth/auth.routes');
+const adminRoutes = require('./modules/admin/admin.routes');
+const hostelRoutes = require('./modules/hostel/hostel.routes');
+const roomRoutes = require('./modules/room/room.routes');
+const bookingRoutes = require('./modules/booking/booking.routes');
+const rentRoutes = require('./modules/rent/rent.routes');
+const maintenanceRoutes = require('./modules/maintenance/maintenance.routes');
+const messRoutes = require('./modules/mess/mess.routes');
+const noticeRoutes = require('./modules/notice/notice.routes');
+const gatepassRoutes = require('./modules/gatepass/gatepass.routes');
+const visitorRoutes = require('./modules/visitor/visitor.routes');
+const requestRoutes = require('./modules/request/request.routes');
 
-// app.use(express.json());
-// app.use('/api', routes);
+// New modules
+const settingsRoutes = require('./modules/admin/settings/settings.routes');
+const facilitiesRoutes = require('./modules/facilities/facilities.routes');
+const complianceRoutes = require('./modules/compliance/compliance.routes');
+const communicationRoutes = require('./modules/communication/communication.routes');
+const notificationRoutes = require('./modules/notification/notification.routes');
 
-// app.use(errorHandler);
-
-// module.exports = app;
-
-
-
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
-import path from "path";
-import { fileURLToPath } from "url";
-import { ENV } from "./config/env.js";
-import router from "./routes/index.js";
-import { errorHandler } from "./middlewares/errorHandler.js";
-import fileUpload from "express-fileupload";
-import { startMemberExpiryCron, startPTAutoCompleteCron } from "./config/startMemberExpiry.js";
-import { startWhatsAppCronJobs } from "./utils/cronJobs.js";
-import os from "os";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Add new owner and student routes
+const ownerRoutes = require('./modules/owner/owner.routes')
+const studentRoutes = require('./modules/student/student.routes')
 
 const app = express();
-app.use(
-  fileUpload({
-    useTempFiles: true,
-    tempFileDir: os.tmpdir(),
-    limits: { fileSize: 50 * 1024 * 1024 }, // optional 50MB limit
-  })
-);
 
-// middlewares
+// Middlewares
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}
+app.use(cors(corsOptions))
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      callback(null, true);
-    },
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-  })
-);
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use(morgan("dev"));
-
-// ✅ Serve uploaded images as static files → http://localhost:4000/uploads/filename.jpg
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
-
-// main routes
-app.use("/api", router);
-
-// health check route
-app.get("/", (req, res) => {
-  res.json({ message: "Gym Management API is running" });
+// Root route
+app.get('/', (req, res) => {
+  res.json({ message: "HMS API is running", version: "1.0.0" });
 });
 
-// error handler (last)
-app.use(errorHandler);
-startMemberExpiryCron()
-startPTAutoCompleteCron()
-startWhatsAppCronJobs()
+// Mount routes
+app.use('/api/v1/auth', authRoutes)
+app.use('/api/v1/admin', adminRoutes)
+app.use('/api/v1/admin/settings', settingsRoutes)
+app.use('/api/v1/hostels', hostelRoutes)
+app.use('/api/v1/rooms', roomRoutes)
+app.use('/api/v1/bookings', bookingRoutes)
+app.use('/api/v1/rent', rentRoutes)
+app.use('/api/v1/maintenance', maintenanceRoutes)
+app.use('/api/v1/mess', messRoutes)
+app.use('/api/v1/notices', noticeRoutes)
+app.use('/api/v1/gatepasses', gatepassRoutes)
+app.use('/api/v1/visitors', visitorRoutes)
+app.use('/api/v1/requests', requestRoutes)
+app.use('/api/v1/facilities', facilitiesRoutes)
+app.use('/api/v1/compliance', complianceRoutes)
+app.use('/api/v1/communications', communicationRoutes)
+app.use('/api/v1/owner', ownerRoutes)
+app.use('/api/v1/student', studentRoutes)
 
-export default app;
+// Keeping notifications route that wasn't strictly in the list but was there previously
+app.use('/api/v1/notifications', notificationRoutes)
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: err.message || 'Internal Server Error'
+  });
+});
+
+module.exports = app;

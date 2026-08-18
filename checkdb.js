@@ -1,26 +1,14 @@
-import mysql from "mysql2/promise";
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
-async function run() {
-  try {
-    const conn = await mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      database: 'gym_db'
-    });
-    
-    console.log("Connected successfully!");
-    
-    const [rows] = await conn.query("SELECT id, memberId, amount, invoiceNo, paymentDate FROM payment ORDER BY id DESC LIMIT 5");
-    console.log("--- RECENT PAYMENTS ---");
-    console.table(rows);
-    
-    const [sums] = await conn.query("SELECT SUM(amount) as total FROM payment");
-    console.log("--- TOTAL REVENUE IN DB ---", sums[0].total);
-    
-    conn.end();
-  } catch (err) {
-    console.error(err);
-  }
+async function check() {
+  const users = await prisma.user.findMany({ select: { id: true, email: true, role: true } });
+  const hostels = await prisma.hostel.findMany({ select: { id: true, name: true, ownerId: true, status: true } });
+  
+  console.log("Users:", users);
+  console.log("Hostels:", hostels);
 }
 
-run();
+check()
+  .catch(e => console.error(e))
+  .finally(() => prisma.$disconnect());

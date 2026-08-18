@@ -1,19 +1,12 @@
-import { pool } from "./src/config/db.js";
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 async function check() {
-  try {
-    const [result] = await pool.query("ALTER TABLE plan ADD COLUMN discountPercent INT DEFAULT 0;");
-    console.log("Column added successfully:", result);
-  } catch (error) {
-    if (error.code === 'ER_DUP_FIELDNAME') {
-      console.log("Column already exists.");
-    } else {
-      console.error("Error adding column:", error);
-    }
-  }
-  process.exit(0);
+  const bookings = await prisma.booking.findMany({ 
+    where: { status: 'APPROVED' },
+    include: { bed: { include: { room: true } } } 
+  });
+  console.log('BOOKINGS:', JSON.stringify(bookings, null, 2));
 }
 
-check();
-
-check();
+check().catch(e => console.error(e)).finally(() => prisma.$disconnect());
